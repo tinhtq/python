@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+black
+pydantic
+pydantic[email]
+motor
+bson
+typing
