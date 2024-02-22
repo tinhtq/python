@@ -1,0 +1,47 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prom_data:/prometheus
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+  python:
+    image: python:test
+    container_name: python
+    expose:
+      - 8000
+    restart: unless-stopped
+  nginx:
+    image: nginx
+    volumes:
+      - ./nginx/nginx.conf:/tmp/nginx.conf
+    environment:
+      - SERVER_ADDR=python:8000
+    command: /bin/bash -c "envsubst < /tmp/nginx.conf > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+    ports:
+      - 80:80
+    depends_on:
+      - python
+  exporter:
+    image: nginx/nginx-prometheus-exporter:1.0.0
+    expose:
+      - 9113
+    command: ["--nginx.scrape-uri=http://nginx/nginx_status"]
+volumes:
+  prom_data:
